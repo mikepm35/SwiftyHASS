@@ -1,0 +1,7 @@
+use_frameworks!
+target 'SwiftyHASS_Tests' do
+  pod 'SwiftyHASS', :path => '../'
+  
+  pod 'Quick', '~> 1.0.0'
+  pod 'Nimble', '~> 5.1.1'
+end
