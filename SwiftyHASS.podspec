@@ -1,10 +1,10 @@
 Pod::Spec.new do |s|
   s.name             = 'SwiftyHASS'
   s.version          = '0.1.0'
-  s.summary          = 'SwiftyHASS is a Framework for accessing Home Assistant.'
+  s.summary          = 'SwiftyHASS is a Framework for accessing Home Assistant for iOS.'
 
   s.description      = <<-DESC
-    SwiftyHASS is a Framework that exposes the Home Assistant API for use within an iOS project.
+    SwiftyHASS is a Framework that exposes the Home Assistant API for use within an iOS project.  Currently only supports retrieving and setting states on switches.
                        DESC
 
   s.homepage         = 'https://github.com/mikepm35/SwiftyHASS'

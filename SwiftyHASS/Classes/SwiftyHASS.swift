@@ -1,9 +1,7 @@
 //
-//  swiftha.swift
-//  siriha
+//  SwiftyHASS.swift
 //
-//  Created by Moritz, Michael on 1/14/17.
-//  Copyright © 2017 mpmoritz. All rights reserved.
+//  Copyright © 2017 Michael Moritz. All rights reserved.
 //
 
 import Foundation
@@ -14,22 +12,22 @@ public enum switchStates: String {
     case off = "off"
 }
 
-public class Swiftha {
+public class SwiftyHASS {
     
     // MARK: Properties
     
     // Initialization properties
-    var httpsecure: Bool
-    var ipaddr_inhome: String
-    var ipaddr_ooh: String
-    var portnum: String
-    var api_password: String
-    var baseurl_inhome: String
-    var baseurl_ooh: String
-    var headers: HTTPHeaders = [:]
+    public var httpsecure: Bool
+    public var ipaddr_inhome: String
+    public var ipaddr_ooh: String
+    public var portnum: String
+    public var api_password: String
+    public var baseurl_inhome: String
+    public var baseurl_ooh: String
+    public var headers: HTTPHeaders = [:]
     
     // Entity properties
-    var switches: [Switch]
+    public var switches: [Switch]
     
     
     // MARK: Initialization
@@ -87,36 +85,27 @@ public class Swiftha {
             print(response.data ?? "")     // server data
             print(response.result)   // result of response serialization
             
-            switch response.result {
-            case .success:
-                print("Validation Successful")
-            case .failure(let error):
-                print(error)
-            }
-            
             if let JSON = response.result.value as? [Any] {
-                print("JSON: \(JSON)")
                 for object in JSON {
-                    print("Running object for loop")
                     if let state_object = object as? [String:Any] {
                         if let switch_holder = Switch(json: state_object) {
                             _ = self.deleteOldMatchingSwitch(api_name: switch_holder.api_name)
                             self.switches += [switch_holder]
                             switch_count += 1
-                            print("Switch length: \(self.switches.count)")
+                            print("Total switches found: \(self.switches.count)")
                         } else {
-                            print("Switch returned nil")
+                            print("Total switches found: 0")
                         }
                     }
                 }
             } else {
-                print("cast error")
+                print("ERROR casting HA states response")
             }
             
             resultHandler(switch_count)
         }
     }
-
+    
     
     public func setSwitchByFriendly(switch_friendly_name: String, state_requested: switchStates, resultHandler: @escaping (_ responseObject: String) -> ()) -> () {
         /*
@@ -128,7 +117,7 @@ public class Swiftha {
         
         var entity_id_requested = ""
         if switch_index < 0 {
-            print("return false, switch index did not match")
+            print("ERROR due to switch index not matching")
             entity_id_requested = "ERROR"
         } else {
             entity_id_requested = switches[switch_index].entity_id
@@ -140,7 +129,7 @@ public class Swiftha {
         } else if state_requested == switchStates.off{
             state_endpoint = "/turn_off"
         } else {
-            print("error")
+            print("ERROR due to unsupported switch setting")
             state_endpoint = "/error"
         }
         
@@ -161,10 +150,9 @@ public class Swiftha {
             var response_string: String
             switch response.result {
             case .success:
-                print("Validation Successful")
                 response_string = "SUCCESS"
             case .failure(let error):
-                print(error)
+                print("ERROR validating set switch response")
                 response_string = "FAILURE"
             }
             
@@ -211,7 +199,7 @@ public class Swiftha {
             switch_index += 1
         }
         
-        print("No match for friendly name")
+        print("No match for switch friendly name")
         return -1
         
     }
@@ -219,13 +207,13 @@ public class Swiftha {
 }
 
 public struct Switch {
-    var entity_id: String
-    var last_updated: String
-    var state: String
-    var friendly_name: String
-    var api_name: String
+    public var entity_id: String
+    public var last_updated: String
+    public var state: String
+    public var friendly_name: String
+    public var api_name: String
     
-    init(entity_id: String, last_updated: String, state: String, friendly_name: String, api_name: String) {
+    public init(entity_id: String, last_updated: String, state: String, friendly_name: String, api_name: String) {
         self.entity_id = entity_id
         self.last_updated = last_updated
         self.state = state
@@ -239,22 +227,19 @@ public extension Switch {
     init?(json: [String: Any]) {
         guard let entity_id = json["entity_id"] as? String
             else {
-                print("Failed unwrapping entity_id")
+                print("ERROR in unwrapping entity_id")
                 return nil
         }
         
         let (testSwitch, api_name) = isEntityDomainSwitch(entity_id: entity_id)
         
         if testSwitch {
-            
-            print(api_name)
-            
             guard let last_updated = json["last_updated"] as? String,
                 let state = json["state"] as? String,
                 let attributes = json["attributes"] as? [String: String],
                 let friendly_name = attributes["friendly_name"]
                 else {
-                    print("Failed unwrapping switch attributes")
+                    print("ERROR unwrapping switch attributes")
                     return nil
             }
             
@@ -265,10 +250,7 @@ public extension Switch {
             self.api_name = api_name
             
         } else {
-            
-            print("Not a test switch")
             return nil
-            
         }
         
     }
