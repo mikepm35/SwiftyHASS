@@ -1,7 +1,9 @@
 //
-//  SwiftyHASS.swift
+//  swiftha.swift
+//  siriha
 //
-//  Copyright © 2017 Michael Moritz. All rights reserved.
+//  Created by Moritz, Michael on 1/14/17.
+//  Copyright © 2017 mpmoritz. All rights reserved.
 //
 
 import Foundation
@@ -17,6 +19,7 @@ public class SwiftyHASS {
     // MARK: Properties
     
     // Initialization properties
+    
     public var httpsecure: Bool
     public var ipaddr_inhome: String
     public var ipaddr_ooh: String
@@ -25,12 +28,82 @@ public class SwiftyHASS {
     public var baseurl_inhome: String
     public var baseurl_ooh: String
     public var headers: HTTPHeaders = [:]
+    public var config_loaded: Bool
     
     // Entity properties
+    
     public var switches: [Switch]
     
     
     // MARK: Initialization
+    
+    // Attempt to initialize with stored values
+    
+    public init() {
+        let local_data = ConfigStore.LoadData()
+        
+        var httpsecure = false
+        var ipaddr_inhome = "empty"
+        var ipaddr_ooh = "empty"
+        var portnum = "empty"
+        var api_password = "empty"
+        var config_loaded = true
+        
+        if let data = local_data?[0].httpsecure {
+            httpsecure = data
+        } else {
+            config_loaded = false
+        }
+        
+        if let data = local_data?[0].ipaddr_inhome {
+            ipaddr_inhome = data
+        } else {
+            config_loaded = false
+        }
+        
+        if let data = local_data?[0].ipaddr_ooh {
+            ipaddr_ooh = data
+        } else {
+            config_loaded = false
+        }
+        
+        if let data = local_data?[0].portnum {
+            portnum = data
+        } else {
+            config_loaded = false
+        }
+        
+        if let data = local_data?[0].api_password {
+            api_password = data
+        } else {
+            config_loaded = false
+        }
+        
+        self.httpsecure = httpsecure
+        self.ipaddr_inhome = ipaddr_inhome
+        self.ipaddr_ooh = ipaddr_ooh
+        self.portnum = portnum
+        self.api_password = api_password
+        self.config_loaded = config_loaded
+        
+        
+        // Setup base urls and header
+        
+        self.baseurl_ooh = createBaseUrl(secure: httpsecure, ipaddr: ipaddr_ooh, portnum: portnum)
+        self.baseurl_inhome = createBaseUrl(secure: httpsecure, ipaddr: ipaddr_inhome, portnum: portnum)
+        
+        self.headers["x-ha-access"] = api_password
+        self.headers["content-type"] = "application/json"
+        
+        
+        // Initialize entities as empty
+        
+        self.switches = [Switch]()
+        
+    }
+    
+    
+    // Initialize with new configuration
     
     public init(httpsecure: Bool, ipaddr_inhome: String, ipaddr_ooh: String, portnum: String, api_password: String) {
         self.httpsecure = httpsecure
@@ -38,28 +111,28 @@ public class SwiftyHASS {
         self.ipaddr_ooh = ipaddr_ooh
         self.portnum = portnum
         self.api_password = api_password
+        self.config_loaded = true
         
         
-        // Setup base urls
+        // Setup base urls and header
         
-        var httpstring = "https"
-        if self.httpsecure == false {
-            httpstring = "http"
-        }
+        self.baseurl_ooh = createBaseUrl(secure: self.httpsecure, ipaddr: self.ipaddr_ooh, portnum: self.portnum)
+        self.baseurl_inhome = createBaseUrl(secure: self.httpsecure, ipaddr: self.ipaddr_inhome, portnum: self.portnum)
         
-        self.baseurl_ooh = httpstring + "://" + self.ipaddr_ooh + ":" + self.portnum
-        self.baseurl_inhome = httpstring + "://" + self.ipaddr_inhome + ":" + self.portnum
-        
-        
-        // Setup header
-        
-        headers["x-ha-access"] = self.api_password
-        headers["content-type"] = "application/json"
+        self.headers["x-ha-access"] = self.api_password
+        self.headers["content-type"] = "application/json"
         
         
         // Initialize entities as empty
         
-        switches = [Switch]()
+        self.switches = [Switch]()
+        
+        
+        // Load configuration to stored data
+        
+        let new_configstore = ConfigStore(httpsecure: httpsecure, ipaddr_inhome: ipaddr_inhome, ipaddr_ooh: ipaddr_ooh, portnum: portnum, api_password: api_password)
+        
+        ConfigStore.SaveData(configstore: [new_configstore!])
         
     }
     
@@ -80,11 +153,6 @@ public class SwiftyHASS {
         var switch_count = 0
         
         Alamofire.request(fullurl, headers: headers).validate().responseJSON { response in
-            print(response.request ?? "")  // original URL request
-            print(response.response ?? "") // HTTP URL response
-            print(response.data ?? "")     // server data
-            print(response.result)   // result of response serialization
-            
             if let JSON = response.result.value as? [Any] {
                 for object in JSON {
                     if let state_object = object as? [String:Any] {
@@ -92,9 +160,9 @@ public class SwiftyHASS {
                             _ = self.deleteOldMatchingSwitch(api_name: switch_holder.api_name)
                             self.switches += [switch_holder]
                             switch_count += 1
-                            print("Total switches found: \(self.switches.count)")
+                            print("HA entity is a switch, adding: \(switch_holder.api_name)")
                         } else {
-                            print("Total switches found: 0")
+                            print("HA entity is not a switch, skipping")
                         }
                     }
                 }
@@ -142,10 +210,6 @@ public class SwiftyHASS {
         let parameters = ["entity_id": entity_id_requested]
         
         Alamofire.request(fullurl, method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers).validate().responseJSON { response in
-            print(response.request ?? "")  // original URL request
-            print(response.response ?? "") // HTTP URL response
-            print(response.data ?? "")     // server data
-            print(response.result)   // result of response serialization
             
             var response_string: String
             switch response.result {
@@ -164,8 +228,23 @@ public class SwiftyHASS {
     // MARK: Utility functions
     
     public func checkIP() -> String {
-        //TODO: do a ping to determine in-home vs out-of-home
-        return baseurl_inhome
+        /*
+         In some cases the Home Assistant may be NAT'd behind a router. Check if the In Home address is reachable, otherwise default to Out of Home (OOH). Request failiures (including if neither address is reachable) are handled by the individual request functions.
+         */
+        
+        let baseip_inhome = createBaseUrl(secure: httpsecure, ipaddr: ipaddr_inhome, portnum: portnum)
+        
+        let reach_manager = NetworkReachabilityManager(host: baseip_inhome)
+        let reach_result = reach_manager?.isReachable
+        
+        print(reach_result)
+        if reach_result! {
+            return baseurl_inhome
+        } else {
+            print("In Home reachability check failed, setting default to OOH")
+            return baseurl_ooh
+        }
+        
     }
     
     public func deleteOldMatchingSwitch(api_name: String) -> Bool {
@@ -191,7 +270,6 @@ public class SwiftyHASS {
     
     public func getSwitchIndexForFriendly(friendly_name: String) -> Int {
         var switch_index = 0
-        
         for s in switches {
             if s.friendly_name == friendly_name {
                 return switch_index
@@ -275,7 +353,97 @@ private func isEntityDomainSwitch(entity_id: String) -> (Bool, String) {
     } else {
         return (false, "")
     }
+}
+
+private func createBaseUrl(with_port: Bool = true, secure: Bool, ipaddr: String, portnum: String) -> (String) {
+    var httpstring = "https"
+    if !secure {
+        httpstring = "http"
+    }
     
+    var baseurl = httpstring + "://" + ipaddr
+    if with_port {
+        baseurl = baseurl + ":" + portnum
+    }
+    
+    return baseurl
+}
+
+
+
+
+// MARK: Local storage
+
+struct PropertyKey {
+    static let httpsecure_key = "httpsecure"
+    static let ipaddr_inhome_key = "ipaddr_inhome"
+    static let ipaddr_ooh_key = "ipaddr_ooh"
+    static let portnum_key = "portnum"
+    static let api_password_key = "api_password"
+}
+
+class ConfigStore: NSObject, NSCoding {
+    
+    // Properties
+    
+    var httpsecure: Bool
+    var ipaddr_inhome: String
+    var ipaddr_ooh: String
+    var portnum: String
+    var api_password: String
+    
+    
+    // Archiving Paths
+    
+    static let DocumentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    
+    static let ArchiveURL = DocumentsDirectory.appendingPathComponent("configstore")
+    
+    
+    // Initialization
+    
+    init?(httpsecure: Bool, ipaddr_inhome: String, ipaddr_ooh: String, portnum: String, api_password: String) {
+        self.httpsecure = httpsecure
+        self.ipaddr_inhome = ipaddr_inhome
+        self.ipaddr_ooh = ipaddr_ooh
+        self.portnum = portnum
+        self.api_password = api_password
+        
+        super.init()
+    }
+    
+    func encode(with aCoder: NSCoder) {
+        aCoder.encode(httpsecure, forKey: PropertyKey.httpsecure_key)
+        aCoder.encode(ipaddr_inhome, forKey: PropertyKey.ipaddr_inhome_key)
+        aCoder.encode(ipaddr_ooh, forKey: PropertyKey.ipaddr_ooh_key)
+        aCoder.encode(portnum, forKey: PropertyKey.portnum_key)
+        aCoder.encode(api_password, forKey: PropertyKey.api_password_key)
+    }
+    
+    required convenience init?(coder aDecoder: NSCoder) {
+        let httpsecure = aDecoder.decodeBool(forKey: PropertyKey.httpsecure_key)
+        let ipaddr_inhome = aDecoder.decodeObject(forKey: PropertyKey.ipaddr_inhome_key) as! String
+        let ipaddr_ooh = aDecoder.decodeObject(forKey: PropertyKey.ipaddr_ooh_key) as! String
+        let portnum = aDecoder.decodeObject(forKey: PropertyKey.portnum_key) as! String
+        let api_password = aDecoder.decodeObject(forKey: PropertyKey.api_password_key) as! String
+        
+        self.init(httpsecure: httpsecure, ipaddr_inhome: ipaddr_inhome, ipaddr_ooh: ipaddr_ooh, portnum: portnum, api_password: api_password)
+    }
+    
+    
+    // NSCoding
+    
+    class func SaveData(configstore: [ConfigStore]) {
+        let is_successful_save = NSKeyedArchiver.archiveRootObject(configstore, toFile: ConfigStore.ArchiveURL.path)
+        
+        if !is_successful_save {
+            print("ERROR in saving configuration locally")
+        }
+    }
+    
+    class func LoadData() -> [ConfigStore]? {
+        return NSKeyedUnarchiver.unarchiveObject(withFile: ConfigStore.ArchiveURL.path) as? [ConfigStore]
+    }
 }
 
 
