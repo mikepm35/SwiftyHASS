@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'SwiftyHASS'
-  s.version          = '0.1.0'
+  s.version          = '0.2.0'
   s.summary          = 'SwiftyHASS is a Framework for accessing Home Assistant for iOS.'
 
   s.description      = <<-DESC

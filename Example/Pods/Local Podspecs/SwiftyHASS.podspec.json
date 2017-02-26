@@ -1,8 +1,8 @@
 {
   "name": "SwiftyHASS",
-  "version": "0.1.0",
-  "summary": "A short description of SwiftyHASS.",
-  "description": "TODO: Add long description of the pod here.",
+  "version": "0.2.0",
+  "summary": "SwiftyHASS is a Framework for accessing Home Assistant for iOS.",
+  "description": "SwiftyHASS is a Framework that exposes the Home Assistant API for use within an iOS project.  Currently only supports retrieving and setting states on switches.",
   "homepage": "https://github.com/mikepm35/SwiftyHASS",
   "license": {
     "type": "MIT",
@@ -13,10 +13,10 @@
   },
   "source": {
     "git": "https://github.com/mikepm35/SwiftyHASS.git",
-    "tag": "0.1.0"
+    "tag": "0.2.0"
   },
   "platforms": {
-    "ios": "8.0"
+    "ios": "10.0"
   },
   "source_files": "SwiftyHASS/Classes/**/*",
   "dependencies": {
