@@ -1,0 +1,26 @@
+PODS:
+  - Alamofire (4.3.0)
+  - Nimble (5.1.1)
+  - Quick (1.0.0)
+  - SwiftyHASS (0.1.0):
+    - Alamofire (~> 4.3)
+
+DEPENDENCIES:
+  - Alamofire (~> 4.3)
+  - Nimble (~> 5.1.1)
+  - Quick (~> 1.0.0)
+  - SwiftyHASS (from `../`)
+
+EXTERNAL SOURCES:
+  SwiftyHASS:
+    :path: ../
+
+SPEC CHECKSUMS:
+  Alamofire: 856a113053a7bc9cbe5d6367a555d773fc5cfef7
+  Nimble: 415e3aa3267e7bc2c96b05fa814ddea7bb686a29
+  Quick: 8024e4a47e6cc03a9d5245ef0948264fc6d27cff
+  SwiftyHASS: 0ae51d8bf1e8e1ceadfd9ed563a8e65749426ea1
+
+PODFILE CHECKSUM: 24cd4705a0973e7768a200394fddcb0976f80e6a
+
+COCOAPODS: 1.1.1

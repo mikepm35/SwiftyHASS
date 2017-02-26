@@ -1,0 +1,6 @@
+framework module SwiftyHASS {
+  umbrella header "SwiftyHASS-umbrella.h"
+
+  export *
+  module * { export * }
+}

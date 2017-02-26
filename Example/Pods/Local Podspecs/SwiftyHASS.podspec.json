@@ -1,0 +1,27 @@
+{
+  "name": "SwiftyHASS",
+  "version": "0.1.0",
+  "summary": "A short description of SwiftyHASS.",
+  "description": "TODO: Add long description of the pod here.",
+  "homepage": "https://github.com/mikepm35/SwiftyHASS",
+  "license": {
+    "type": "MIT",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "mikepm35": "mike.p.moritz@gmail.com"
+  },
+  "source": {
+    "git": "https://github.com/mikepm35/SwiftyHASS.git",
+    "tag": "0.1.0"
+  },
+  "platforms": {
+    "ios": "8.0"
+  },
+  "source_files": "SwiftyHASS/Classes/**/*",
+  "dependencies": {
+    "Alamofire": [
+      "~> 4.3"
+    ]
+  }
+}
